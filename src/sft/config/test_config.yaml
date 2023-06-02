@@ -1,0 +1,27 @@
+eval:
+  model:
+    name: "decapoda-research/llama-7b-hf"
+    load_in_8bit: true
+  seed: 42
+  compute_metrics: true
+  data:
+    dataset_name: "Myashka/SO-Python_QA-API_Usage-tanh_score"
+    max_prompt_length: 512
+    split: "test"  
+  generate_config:
+    do_sample: True
+    max_new_tokens: 512
+    no_repeat_ngram_size: 2
+    top_k: 50
+    top_p: 0.9
+    use_cache: true
+log_config:
+  save_steps: 100
+  dir: dir_path
+  file_name: filename.csv
+
+wandb_config:
+  project: 'SO-LLAMA'
+  name: run_name
+  tags:
+    - "stf"
