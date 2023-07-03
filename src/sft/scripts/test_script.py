@@ -8,8 +8,8 @@ from transformers import set_seed
 from utils import load_model
 from yaml import CLoader
 
-from sft.data import make_inference_dataset
-from sft.models import eval_model
+from ..data import make_inference_dataset
+from ..models import eval_model
 
 
 @click.command()
@@ -46,7 +46,7 @@ def main(config_file):
         config["compute_metrics"],
     )
 
-    wandb.finish()
+    run.finish()
 
 
 if __name__ == "__main__":

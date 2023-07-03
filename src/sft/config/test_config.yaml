@@ -2,6 +2,7 @@ eval:
   model:
     name: "decapoda-research/llama-7b-hf"
     load_in_8bit: true
+    peft_model_id: null
   seed: 42
   compute_metrics: true
   data:

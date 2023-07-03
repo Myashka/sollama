@@ -1,1 +1,1 @@
-from test_model import eval_model
+from .test_model import eval_model
