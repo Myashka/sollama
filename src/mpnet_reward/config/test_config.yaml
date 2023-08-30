@@ -1,0 +1,42 @@
+eval:
+  model:
+    name: /home/st-gorbatovski/sollama/src/mpnet_reward/artifacts/experiments/train-mpnet-so_par-lr_2e5-norm-so_margin_5-cos_dist-fr_1_10_11
+    torch_dtype: null # fp16/null
+    device_map: cuda:1
+    padding_side: right
+  seed: 42
+  batch_size: 64
+  data:
+    dataset_name: Myashka/SO_Python_basics_QA_human_pref
+    max_length_q: 512
+    max_length_a: 256
+    test_size: 1000  
+    use_title: false
+    use_gen: false
+    use_par: true
+    use_so: true
+    num_proc: 8
+    so_fix: 0.15
+    columns_to_save:
+      - Q_Id
+      - Title
+      - Question
+      - response_k
+      - response_j
+      - is_gen_j
+      - is_gen_k
+      - is_par_j
+      - is_par_k
+      - log_score_k
+      - log_score_j
+log_config:
+  save_steps: 5
+  dir: /home/st-gorbatovski/sollama/src/mpnet_reward/artifacts/tests/trained_on_all/cos_dist
+  file_name: test-mpnet-so_par-lr_2e5-norm-so_margin_5-cos_dist-fr_1_10_11.csv
+
+wandb_config:
+  project: 'SO_LLAMA'
+  name: test-mpnet-so_par-lr_2e5-norm-so_margin_5-cos_dist-fr_1_10_11
+  tags:
+    - "reward"
+    - "test"

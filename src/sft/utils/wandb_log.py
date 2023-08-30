@@ -15,7 +15,6 @@ def log_table(run, filename, table_df):
     filename = filename.replace('.csv', '')
     wandb_table = wandb.Table(dataframe=table_df)
     run.log({filename: wandb_table})
-    return wandb_table
 
 
 def log_metrics_histograms(run, filename, table_df):

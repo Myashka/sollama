@@ -1,0 +1,40 @@
+# config.yaml
+model_params:
+  model_name: "intfloat/e5-base"
+  num_classes: 8
+  n_inputs: 768
+
+  batch_norm: False
+  dropout_rate: 0.1
+  activation: "leaky_relu"
+
+data_params:
+  data_path: "/kaggle/working/question_classification/dataset/train_val_data"
+  tokenizer_name: "intfloat/e5-base"
+  max_len: 512
+  train_batch_size: 128
+  val_batch_size: 128
+  num_workers: 8
+  pin_memory: False
+  transform: False
+
+exp_params:
+  LR: 0.0001
+  weight_decay: 0.0
+  scheduler_gamma: 0.9
+  kld_weight: 0.00025
+  manual_seed: 1265
+  freeze: true
+
+trainer_params:
+  devices: 2
+  log_every_n_steps: 1
+  val_check_interval: 100
+  max_epochs: 20
+
+logging_params:
+  log_dir: "/kaggle/working/logs/"
+  save_dir: "/kaggle/working/saved_models"
+  name: "E5_QC4QA"
+
+seed: 17

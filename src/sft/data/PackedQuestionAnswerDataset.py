@@ -1,6 +1,8 @@
 from typing import Dict, List, Union
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
+import torch
+
 
 class PackedQuestionAnswerDataset(Dataset):
     """
@@ -10,6 +12,7 @@ class PackedQuestionAnswerDataset(Dataset):
     :param dataset: The list of dictionaries each containing a question and answer pair.
     :param tokenizer: Tokenizer instance to encode the texts.
     :param max_length: The maximum length for the sequences.
+    :param max_prompt_length: The maximum length for the prompt sequences.
     :param use_title: A flag indicating whether to include titles in the prompt.
     :return: An instance of PackedQuestionAnswerDataset.
     """
@@ -19,10 +22,12 @@ class PackedQuestionAnswerDataset(Dataset):
         dataset: List[Dict[str, Union[str, int]]],
         tokenizer,
         max_length: int,
+        max_prompt_length: int,
         use_title: bool = False,
     ):
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.max_prompt_length = max_prompt_length
         self.eos_token_id = tokenizer.eos_token_id
         self.pad_token_id = tokenizer.pad_token_id
         self.use_title = use_title
@@ -30,8 +35,8 @@ class PackedQuestionAnswerDataset(Dataset):
 
     def prepare_prompt(self, question: str, title: str = None) -> str:
         if title:
-            return f"Title: {title}\nQuestion: {question}\n\nAnswer:"
-        return f"Question: {question}\n\nAnswer:"
+            return f"Title: {title}\nQuestion: {question}"
+        return f"Question: {question}"
 
     def encode_example(self, example: Dict[str, str]) -> Dict[str, List[int]]:
         """
@@ -45,15 +50,13 @@ class PackedQuestionAnswerDataset(Dataset):
             if self.use_title
             else self.prepare_prompt(example["Question"])
         )
-        answer = example["Answer"] + "</s>\n\n"
+        answer = "\n\nAnswer: " + example["Answer"]
+        answer += "</s>\n\n"
+
         encoded_answer = self.tokenizer.encode(answer, add_special_tokens=False)
         encoded_question = self.tokenizer.encode(question, add_special_tokens=False)
 
-        # Truncate the question from the end if the pair is too long
-        if len(encoded_question) + len(encoded_answer) > self.max_length - 1:
-            encoded_question = encoded_question[
-                : self.max_length - len(encoded_answer) - 1
-            ]
+        encoded_question = encoded_question[: self.max_prompt_length]
 
         return {"question": encoded_question, "answer": encoded_answer}
 
@@ -69,6 +72,10 @@ class PackedQuestionAnswerDataset(Dataset):
         """
         input_sequence = question + answer
         label_sequence = [-100] * len(question) + answer
+
+        input_sequence = input_sequence[: self.max_length]
+        label_sequence = label_sequence[: self.max_length]
+
         return {"input": input_sequence, "label": label_sequence}
 
     def build_sample(self, buffer: Dict[str, List[int]]) -> Dict[str, torch.Tensor]:
@@ -84,9 +91,7 @@ class PackedQuestionAnswerDataset(Dataset):
             "labels": torch.tensor(buffer["label"]),
         }
 
-    def pack_inputs_and_labels(
-        self, dataset: List[Dict[str, Union[str, int]]]
-    ) -> List[Dict[str, torch.Tensor]]:
+    def pack_inputs_and_labels(self, dataset):
         """
         Pack the inputs and labels for all examples in the dataset.
 

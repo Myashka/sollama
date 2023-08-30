@@ -1,34 +1,46 @@
 eval:
   model:
-    name: "/raid/models/llama-7b-hf" # путь файлов модели
+    name: /raid/models/llama-7b-python_basics-fp32 # /raid/models/llama-7b-hf # /raid/models/llama-7b-python_basics-fp32 # /raid/models/llama-7b-python_basics
     load_in_8bit: false
-    peft_model_id: null # указать, чтобы загрузить Peft веса с HF
+    peft_model_id: /home/st-gorbatovski/sollama/src/rlhf/artifacts/ppo-train-llama_w_lora-bs_64-mbs_4-512-256-mpnet_dot_prod_so_par-dot_prod-length_penalty-default_gen/best_ppo_step_72-mean_reward_39.2
     torch_dtype: fp16 # fp16/null
-    device_map: cuda:0
+    device_map: cuda:1
     padding_side: left
   seed: 42
+  batch_size: 8
   compute_metrics: true
   data:
-    dataset_name: "Myashka/SO-Python_QA-API_Usage-tanh_score" # название dataset на HF
+    dataset_name: Myashka/SO-Python_basics_QA-filtered-2023-tanh_score # /home/st-gorbatovski/sollama/data/processed/tanh_score/python_basics/unique_test_to_gen_reward_eval_v2.json
     max_prompt_length: 512
     split: "test"  
-    use_title: false
+    use_title: true
+    from_file: false #!
+    columns_to_save:
+      - Question
+      - Answer
+      - Title # if use_title
+      - Score
+      - Users Score
+      - Q_Id
+      - CreationDate
+      - log_score
   generate_config:
+    temperature: 0.7
     do_sample: true
-    max_new_tokens: 512
+    max_new_tokens: 256
     no_repeat_ngram_size: 2
     top_k: 50
     top_p: 0.9
     use_cache: true
-    num_return_sequences: 1 # странная ошибка
+    num_return_sequences: 3
 log_config:
-  save_steps: 50
-  dir: /home/st-gorbatovski/sollama/src/sft/artifacts/tests
-  file_name: test-llama-7b-fp16-max_prompt_length_512.csv
+  save_steps: 5
+  dir: /home/st-gorbatovski/sollama/src/sft/artifacts/tests/python_basics/rlhf
+  file_name: test-rlhf-LoRA_llama-7b-t_09-basics-mpnet_dot_prod_so_par-dot_prod-length_penalty-step_72-mean_reward_39.2-3_attempts-temp_0.7.csv
 
 wandb_config:
   project: 'SO_LLAMA'
-  name: test-llama-7b-fp16-max_prompt_length_512-attempt_1
+  name: test-rlhf-LoRA_llama-7b-t_09-basics-mpnet_dot_prod_so_par-dot_prod-length_penalty-step_72-mean_reward_39.2-3_attempts-temp_0.7
   tags:
-    - "stf"
+    - "rlhf"
     - "test"

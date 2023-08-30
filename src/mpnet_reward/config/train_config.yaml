@@ -1,0 +1,73 @@
+model:
+  name: "sentence-transformers/multi-qa-mpnet-base-cos-v1"
+  torch_dtype: null # fp16/null - dtype модели, если fp16 - ошибка 0
+  padding_side: right
+  device_map: cuda:0
+
+freeze: 
+  embeddings: true
+  encoder.layer.1: true
+  encoder.layer.10: true
+  encoder.layer.11: true
+
+data:
+  dataset_name: "Myashka/SO_Python_basics_QA_human_pref"
+  max_length_q: 512
+  max_length_a: 256
+  use_title: true
+  val_size: 500
+  use_gen: false
+  use_par: true
+  use_so: true
+  so_fix: 0.15
+  num_proc: 8
+
+triplet_arguments:
+  normalize: true
+  so_margin: 0.5
+  gen_margin: 0
+  similarity_type: cos_dist  # euclidean/cos_dist/dot_prod_sim default
+  a_n_loss_weight: 0
+
+training_arguments:
+  seed: 42
+  num_train_epochs: 10
+  per_device_train_batch_size: 64
+  per_device_eval_batch_size: 64
+  learning_rate: 2.0e-05
+  optim: "adamw_torch"
+  # Oprims: adamw_hf/adamw_torch/adamw_torch_fused/adamw_apex_fused/adamw_anyprecision/adafactor
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.99
+  max_grad_norm: 1
+
+  ### LR SCHEDULER ###
+  # TYPES: linear/cosine/cosine_with_restarts/polynomial/constant/constant_with_warmup
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.01
+
+  ### MEMORY OPTIMIZATION ###
+  gradient_accumulation_steps: 1
+  gradient_checkpointing: false  # mpnet no support
+
+  ### EVALUATION ###
+  evaluation_strategy: "steps" # steps/epoch
+  eval_steps: 0.05
+  logging_first_step: true
+  dataloader_drop_last: false
+
+  ### SAVING ###
+  save_strategy: "steps" #steps/epoch; if steps needs `save_steps`
+  save_steps: 0.05
+  output_dir: /home/st-gorbatovski/sollama/src/mpnet_reward/artifacts/experiments/train-mpnet-so_par-lr_2e5-norm-so_margin_5-cos_dist-fr_1_10_11
+  save_total_limit: 1
+  load_best_model_at_end: true
+  metric_for_best_model: avg_class_accuracy
+  resume_from_checkpoint: null
+
+  ### LOGGING CONFIG ###
+  logging_strategy: "steps"
+  logging_steps: 1
+  report_to: 'wandb'
+  run_name: train-mpnet-so_par-lr_2e5-norm-so_margin_5-cos_dist-fr_1_10_11

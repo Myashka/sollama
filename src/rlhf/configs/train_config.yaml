@@ -1,0 +1,70 @@
+data:
+  dataset_name: Myashka/SO-Python_basics_QA-filtered-2023-tanh_score
+  max_prompt_length: 512
+  split: train  
+  use_title: true
+  from_file: false
+
+generation_config:
+  min_length: -1 # -1
+  do_sample: true
+  max_new_tokens: 256
+  temperature: 1 # 1.0
+  # no_repeat_ngram_size: 2
+  top_k: 0 # 0.0
+  top_p: 1 # 1.0
+
+lora_config:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  bias: "none"
+
+ppo_config:
+  seed: 42
+  model_name: /raid/models/llama-7b-python_basics_par-fp32 # /raid/models/llama-7b-python_basics-fp32 
+  learning_rate: 1.41e-05
+  max_grad_norm: 1
+  use_score_scaling: false
+  use_score_norm: false
+  score_clip: null
+  ### PPO ###
+  target_kl: 6
+  horizon: 10000
+  gamma: 1
+  lam: 0.95
+  vf_coef: 0.1
+  init_kl_coef: 0.25 # 0.2
+  kl_penalty: kl  # ["kl", "abs", "mse", "full"]
+  ### BATCH ###
+  steps: 2067700  # train size 20677
+  batch_size: 64
+  mini_batch_size: 4
+  ppo_epochs: 4
+  ### MEMORY ###
+  gradient_accumulation_steps: 4
+  optimize_cuda_cache: true
+  remove_unused_columns: true
+  ### TRACKING ###
+  log_with: wandb
+  tracker_project_name: SO_LLAMA
+  tracker_kwargs:
+    name: ppo-train-llama_w_lora-mpnet_dot_prod_so_par-cos_sim-length_penalty-default_gen
+    tags:
+      - 'rlhf'
+      - 'train'
+
+reward:
+  reward_type: cos_sim  # cos_sim/dot_prod
+  batch_size: 16
+  length_penalty_config:
+    alpha1: 2
+    alpha2: 0.1
+    lower_bound_length: 40
+    upper_bound_length: 128
+  reward_model_name: /home/st-gorbatovski/sollama/src/mpnet_reward/artifacts/experiments/train-mpnet-so_par-lr_2e5-not_norm-so_margin_5-dot_prod_sim-fr_1_10_11/checkpoint-14345 # /home/st-gorbatovski/sollama/src/mpnet_reward/artifacts/experiments/train-mpnet-so_par-lr_2e5-norm-so_margin_5-cos_dist-fr_1_10_11
+
+save:
+  best_checkpoint_dir: /home/st-gorbatovski/sollama/src/rlhf/artifacts/ppo-train-llama_w_lora-mpnet_dot_prod_so_par-cos_sim-length_penalty-default_gen/best_ppo
+  checkpoint_dir: /home/st-gorbatovski/sollama/src/rlhf/artifacts/ppo-train-llama_w_lora-mpnet_dot_prod_so_par-cos_sim-length_penalty-default_gen/chpts_ppo
+  save_interval: 32

@@ -1,0 +1,70 @@
+model:
+  name: "/raid/models/llama-7b-hf"
+  load_in_8bit: false
+  peft_model_id: null # указать, чтобы загрузить Peft веса с HF
+  torch_dtype: fp16 # fp16/null - dtype модели
+  device_map: auto # cuda:2
+  padding_side: left # try right
+
+lora_config:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+  bias: "none"
+
+data:
+  train_split: train
+  val_split: validation
+  dataset:
+    dataset_name: Myashka/SO-Python_basics_QA-filtered-2023-T5_paraphrased-tanh_score # "Myashka/SO-Python_basics_QA-filtered-2023-tanh_score"
+    max_length: 768
+    max_prompt_length: 512
+    use_title: true
+    filter_zero_scores: true
+
+training_arguments:
+  seed: 42
+  num_train_epochs: 15
+  per_device_train_batch_size: 64
+  per_device_eval_batch_size: 64
+  learning_rate: 1.0e-04
+  optim: "adamw_torch"
+  # Oprims: adamw_hf/adamw_torch/adamw_torch_fused/adamw_apex_fused/adamw_anyprecision/adafactor
+  weight_decay: 0.05
+  adam_beta1: 0.9
+  adam_beta2: 0.99
+  max_grad_norm: 1
+
+  ### LR SCHEDULER ###
+  # TYPES: linear/cosine/cosine_with_restarts/polynomial/constant/constant_with_warmup
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.01
+
+  ### MEMORY OPTIMIZATION ###
+  gradient_accumulation_steps: 1 # !
+  fp16: true
+  gradient_checkpointing: true
+
+  ### EVALUATION ###
+  evaluation_strategy: "steps" # steps/epoch
+  eval_steps: 0.066
+  fp16_full_eval: true
+  logging_first_step: true
+  prediction_loss_only: true
+  remove_unused_columns: false
+  dataloader_drop_last: false
+  # predict_with_generate: false
+
+  ### SAVING ###
+  save_strategy: "steps" #steps/epoch; if steps needs `save_steps`
+  save_steps: 0.066
+  output_dir: /home/st-gorbatovski/sollama/src/sft/artifacts/experiments/python_basics/train-llama-7b-bs_32-lr_1e4-m_l_758-m_p_l_512-basics-par-no_zero
+  save_total_limit: 1
+  load_best_model_at_end: true
+  resume_from_checkpoint: null
+
+  ### LOGGING CONFIG ###
+  logging_strategy: "steps"
+  logging_steps: 1
+  report_to: 'wandb'
+  run_name: "train-llama-7b-bs_32-lr_1e4-m_l_758-m_p_l_512-basics-par-no_zero"
