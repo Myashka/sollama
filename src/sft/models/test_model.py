@@ -3,10 +3,11 @@ import gc
 import pandas as pd
 import torch
 import wandb
-from torchmetrics import ROUGEScore, SacreBLEUScore
+from torchmetrics import SacreBLEUScore
+from torchmetrics.text.rouge import ROUGEScore
 from tqdm import tqdm
 
-from utils import log_metrics_histograms, log_table, save_csv
+from ..utils import log_metrics_histograms, log_table, save_csv
 
 
 def eval_model(
@@ -25,6 +26,11 @@ def eval_model(
 
     :return: None. This function does not return any value. The results are logged using wandb and saved as CSV files.
     """
+    if next(iter(dataloader)).get('Title'):
+        use_title = True
+    else:
+        use_title = False
+
     model.eval()
 
     rouge = ROUGEScore()
@@ -34,10 +40,10 @@ def eval_model(
     metrics_accumulator = {key: [] for key in ["ROUGE_1", "ROUGE_2", "ROUGE_L", "BLEU"]}
 
     for i, batch in enumerate(tqdm(dataloader)):
-        with torch.cuda.amp.autocast():
+        with torch.autocast("cuda"):
             output_tokens = model.generate(
-                input_ids=batch["input_ids"],
-                attention_mask=batch["attention_mask"],
+                input_ids=batch["input_ids"].to(model.device),
+                attention_mask=batch["attention_mask"].to(model.device),
                 **generate_config,
             ).cpu().numpy()
 
@@ -45,37 +51,38 @@ def eval_model(
             tokenizer.batch_decode(batch["input_ids"], skip_special_tokens=True)[0]
         )
 
-        gen_answer = str(tokenizer.batch_decode(output_tokens, skip_special_tokens=True)[0])
-        gen_answer = str(gen_answer[prompt_len:])
+        for output_token in output_tokens:
+            gen_answer = str(tokenizer.decode(output_token.squeeze(), skip_special_tokens=True))
+            gen_answer = str(gen_answer[prompt_len:])
 
-        result = {
-            "Question": batch["Question"],
-            "Answer": batch["Answer"],
-            "Generated Answer": gen_answer,
-        }
-
-        if compute_metrics:
-            rouge_score = rouge(gen_answer, batch["Answer"])
-            bleu_score = bleu(gen_answer, batch["Answer"]).item()
-
-            metrics = {
-                "ROUGE_1": rouge_score["rouge1_fmeasure"].item(),
-                "ROUGE_2": rouge_score["rouge2_fmeasure"].item(),
-                "ROUGE_L": rouge_score["rougeL_fmeasure"].item(),
-                "BLEU": bleu_score,
+            result = {
+                'Q_Id': i,
+                "Question": batch["Question"][0],
+                "Answer": batch["Answer"][0],
+                "Generated Answer": gen_answer,
             }
+            if use_title:
+                result['Title'] = batch['Title'][0]
 
-            result.update(metrics)
+            if compute_metrics:
+                rouge_score = rouge(gen_answer, batch["Answer"][0])
+                bleu_score = bleu(gen_answer, batch["Answer"][0]).item()
 
-            # accumulate metrics for histogram
-            for key in metrics.keys():
-                metrics_accumulator[key].append(metrics[key])
+                metrics = {
+                    "ROUGE_1": rouge_score["rouge1_fmeasure"].item(),
+                    "ROUGE_2": rouge_score["rouge2_fmeasure"].item(),
+                    "ROUGE_L": rouge_score["rougeL_fmeasure"].item(),
+                    "BLEU": bleu_score,
+                }
 
-        del output_tokens
-        torch.cuda.empty_cache()
-        gc.collect()
+                result.update(metrics)
 
-        results.append(result)
+                # accumulate metrics for histogram
+                for key in metrics.keys():
+                    metrics_accumulator[key].append(metrics[key])
+
+                results.append(result)
+
 
         del output_tokens, result
         torch.cuda.empty_cache()
@@ -84,11 +91,11 @@ def eval_model(
         if (i + 1) % log_config["save_steps"] == 0:
             results_df = pd.DataFrame(results)
             save_csv(results_df, f"{log_config['dir']}/{log_config['file_name']}")
-            log_table(run, log_config["file_name"], results_df)
+            wandb_table = log_table(run, log_config["file_name"], results_df)
 
             if compute_metrics:
                 metrics_df = pd.DataFrame(metrics_accumulator)
-                log_metrics_histograms(run, log_config["file_name"], metrics_df)
+                log_metrics_histograms(run, log_config["file_name"], results_df)
 
             # Clear the results for the next iteration
             results = []
@@ -99,10 +106,10 @@ def eval_model(
     if results:
         results_df = pd.DataFrame(results)
         save_csv(results_df, f"{log_config['dir']}/{log_config['file_name']}")
-        log_table(run, log_config["file_name"], results_df)
+        table = log_table(run, log_config["file_name"], results_df)
         if compute_metrics:
             metrics_df = pd.DataFrame(metrics_accumulator)
-            log_metrics_histograms(run, log_config["file_name"], metrics_df)
+            log_metrics_histograms(run, log_config["file_name"], table)
 
     artifact = wandb.Artifact(log_config['file_name'].replace('.csv', ''), type='dataset')
     artifact.add_file(f"{log_config['dir']}/{log_config['file_name']}")

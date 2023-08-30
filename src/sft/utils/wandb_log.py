@@ -15,9 +15,10 @@ def log_table(run, filename, table_df):
     filename = filename.replace('.csv', '')
     wandb_table = wandb.Table(dataframe=table_df)
     run.log({filename: wandb_table})
+    return wandb_table
 
 
-def log_metrics_histograms(run, filename, metrics_df):
+def log_metrics_histograms(run, filename, table_df):
     """
     Logs histograms of the metrics to wandb.
 
@@ -30,10 +31,11 @@ def log_metrics_histograms(run, filename, metrics_df):
     metrics = ["BLEU", "ROUGE_1", "ROUGE_2", "ROUGE_L"]
     filename = filename.replace('.csv', '')
     for metric in metrics:
+        wandb_table = wandb.Table(dataframe=table_df[[metric]])
         run.log(
             {
                 f"{filename}_{metric}": wandb.plot.histogram(
-                    metrics_df, metric, title=f"{metric} Histogram"
+                    wandb_table, metric, title=f"{metric} Histogram"
                 )
             }
         )

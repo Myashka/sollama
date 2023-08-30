@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 
+wandb/
+*.csv
+*.bin
+tests/
+experiments/
 # C extensions
 *.so
 
@@ -29,6 +34,8 @@ var/
 *.manifest
 *.spec
 
+*.json
+*.ckpt
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -76,7 +83,7 @@ target/
 .ipynb_checkpoints/
 
 # exclude data from source control by default
-/data/
+
 
 # Mac OS-specific storage files
 .DS_Store

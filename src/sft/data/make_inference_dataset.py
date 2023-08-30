@@ -8,6 +8,7 @@ def make_inference_dataset(
     max_prompt_length,
     padding="longest",
     truncate_promt=True,
+    use_title=False,
 ):
     """
     Prepares a dataset for inference by formatting the prompt and tokenizing the text.
@@ -23,18 +24,27 @@ def make_inference_dataset(
     :return: Returns a dataset object with the formatted and tokenized text data.
     """
 
-    def _prepare_prompt(question):
-        return f"Question: {question}\nAnswer:"
-
-    def promt_tokenize(examples):
+    def _prepare_prompt(question, title=None):
+        if title:
+            return f"Title: {title}\nQuestion: {question}\n\nAnswer:"
+        return f"Question: {question}\n\nAnswer:"
+    
+    def promt_tokenize(example):
         if truncate_promt:
-            q_toks = tokenizer.encode(examples["Question"])
-            q_toks = q_toks[: max_prompt_length - 8]
-            tmp = tokenizer.decode(q_toks).strip()
+            encoded_question = tokenizer.encode(example["Question"], add_special_tokens=False)
+            if use_title:
+                encoded_title = tokenizer.encode("Title: " + example["Title"], add_special_tokens=False)
+                encoded_question = encoded_question[: max_prompt_length - len(encoded_title) - 8]
+            else:
+                encoded_question = encoded_question[: max_prompt_length - 8]
+            tmp = tokenizer.decode(encoded_question, skip_special_tokens=True)
         else:
-            tmp = examples["Question"]
+            tmp = example["Question"]
 
-        tmp = _prepare_prompt(tmp)
+        if use_title:
+            tmp = _prepare_prompt(tmp, example['Title'])
+        else:
+            tmp = _prepare_prompt(tmp)
 
         tokenized_dict = tokenizer(
             tmp, padding=padding, max_length=max_prompt_length, truncation=True
@@ -44,8 +54,13 @@ def make_inference_dataset(
 
     dataset = load_dataset(dataset_name, split=split)
     dataset = dataset.map(promt_tokenize)
-    dataset.set_format(
-        type="torch", columns=["Question", "Answer", "input_ids", "attention_mask"]
-    )
-
+    if use_title:
+        dataset.set_format(
+            type="torch",
+            columns=["Title", "Question", "Answer", "input_ids", "attention_mask"],
+        )
+    else:
+        dataset.set_format(
+            type="torch", columns=["Question", "Answer", "input_ids", "attention_mask"]
+        )
     return dataset

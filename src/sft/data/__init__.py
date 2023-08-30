@@ -1,1 +1,1 @@
-from sft.data.make_inference_dataset import make_inference_dataset
+from .make_inference_dataset import make_inference_dataset
