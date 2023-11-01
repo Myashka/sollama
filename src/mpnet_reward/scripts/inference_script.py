@@ -4,9 +4,7 @@ import pandas as pd
 import argparse
 from tqdm import tqdm
 import gc
-import sys
 
-sys.path.append("/home/st-gorbatovski/sollama/")
 from src.mpnet_reward.utils import load_model, set_random_seed
 from src.mpnet_reward.models.helper_fucntions import (
     get_embeddings,

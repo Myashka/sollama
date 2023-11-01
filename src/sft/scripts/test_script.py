@@ -10,8 +10,6 @@ from yaml import CLoader
 
 import sys
 
-sys.path.append("/home/st-gorbatovski/sollama/")
-
 from src.sft.utils import load_model, set_random_seed
 from src.sft.data import make_inference_dataset
 from src.sft.models import eval_model

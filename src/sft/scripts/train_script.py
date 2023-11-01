@@ -19,7 +19,6 @@ from transformers import (
 import sys
 import os
 
-sys.path.append("/home/st-gorbatovski/sollama/")
 from src.sft.data import make_train_dataset  # , make_inference_dataset
 from src.sft.utils import load_model, set_random_seed, SavePeftModelCallback
 
@@ -62,10 +61,14 @@ def main(config_file):
 
     # make datasets
     train_dataset = make_train_dataset(
-        tokenizer=tokenizer, split=config["data"]["train_split"], **config["data"]["dataset"]
+        tokenizer=tokenizer,
+        split=config["data"]["train_split"],
+        **config["data"]["dataset"],
     )
     eval_dataset = make_train_dataset(
-        tokenizer=tokenizer, split=config["data"]["val_split"], **config["data"]["dataset"]
+        tokenizer=tokenizer,
+        split=config["data"]["val_split"],
+        **config["data"]["dataset"],
     )
 
     # make generatoin config

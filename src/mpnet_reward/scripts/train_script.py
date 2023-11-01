@@ -8,7 +8,6 @@ from transformers import TrainingArguments
 import sys
 import os
 
-sys.path.append("/home/st-gorbatovski/sollama/")
 from src.mpnet_reward.data import make_datasets, RewardDataCollatorWithPadding
 from src.mpnet_reward.models.TripletTrainer import TripletTrainer
 from src.mpnet_reward.utils import (
